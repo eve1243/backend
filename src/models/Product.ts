@@ -17,6 +17,14 @@ const ProductSchema = new mongoose.Schema({
   imageUrl: {
     type: String,
   },
+  cloudinaryUrl: {
+    type: String,
+  },
+  cloudinaryId: {
+    type: String,
+  },
+}, {
+  timestamps: true
 });
 
 export default mongoose.models.Product || mongoose.model('Product', ProductSchema);

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Product from '@/models/Product';
-import { getSession } from 'next-auth/react';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { uploadImage } from '@/utils/cloudinary';
 
 export async function GET() {
   await dbConnect();
@@ -9,13 +11,13 @@ export async function GET() {
   try {
     const products = await Product.find({});
     return NextResponse.json({ success: true, data: products });
-  } catch (error) {
-    return NextResponse.json({ success: false }, { status: 400 });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
   }
 }
 
-export async function POST(req) {
-  const session = await getSession({ req });
+export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 });
   }
@@ -23,9 +25,23 @@ export async function POST(req) {
   await dbConnect();
 
   try {
-    const product = await Product.create(req.body);
+    const body = await req.json();
+    
+    // Handle Cloudinary upload if image is provided
+    if (body.image && body.image.startsWith('data:image')) {
+      const cloudinaryResult = await uploadImage(body.image);
+      
+      // Add Cloudinary data to the product
+      body.cloudinaryUrl = cloudinaryResult.cloudinaryUrl;
+      body.cloudinaryId = cloudinaryResult.cloudinaryId;
+      
+      // Remove the base64 image from the body to save DB space
+      delete body.image;
+    }
+    
+    const product = await Product.create(body);
     return NextResponse.json({ success: true, data: product }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ success: false, error }, { status: 400 });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
   }
 }

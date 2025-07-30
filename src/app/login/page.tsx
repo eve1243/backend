@@ -1,27 +1,38 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const result = await signIn('credentials', {
-      redirect: false,
-      username,
-      password,
-    });
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const result = await signIn('credentials', {
+        redirect: false,
+        username,
+        password,
+      });
 
-    if (result.error) {
-      setError('Invalid credentials');
-    } else {
-      router.push('/admin');
+      if (result?.error) {
+        setError('Invalid credentials');
+      } else {
+        router.push('/admin');
+      }
+    } catch (err) {
+      setError('An error occurred during login');
+      console.error('Login error:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -50,8 +61,17 @@ export default function LoginPage() {
             required
           />
         </div>
-        <button type="submit" className="w-full bg-blue-500 text-white px-4 py-2 rounded">
-          Login
+        <button 
+          type="submit" 
+          className="w-full bg-blue-500 text-white px-4 py-2 rounded flex items-center justify-center"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <span className="animate-spin h-4 w-4 mr-2 border-t-2 border-b-2 border-white rounded-full"></span>
+              Loading...
+            </>
+          ) : 'Login'}
         </button>
       </form>
     </div>
