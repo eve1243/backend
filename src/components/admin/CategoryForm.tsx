@@ -35,14 +35,16 @@ export default function CategoryForm({ initialData, isEditing = false }: Categor
 
   useEffect(() => {
     // Kategorien vom Server laden
-    const fetchCategories = async () => {
-      try {
-        const response = await axios.get('/api/categories');
-        setCategories(response.data);
-      } catch (error) {
-        console.error('Fehler beim Laden der Kategorien:', error);
-      }
-    };
+     const fetchCategories = async () => {
+  try {
+    const response = await axios.get('/api/categories');
+    if (response.data.success) {
+      setCategories(response.data.data);
+    }
+  } catch (error) {
+    console.error('Fehler beim Laden der Kategorien:', error);
+  }
+}
     fetchCategories();
   }, []);
 
