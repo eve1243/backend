@@ -17,11 +17,13 @@ const ProductSchema = new mongoose.Schema({
   imageUrl: {
     type: String,
   },
-  cloudinaryUrl: {
-    type: String,
+  cloudinaryUrls: {
+    type: [String],
+    default: [],
   },
-  cloudinaryId: {
-    type: String,
+  cloudinaryIds: {
+    type: [String],
+    default: [],
   },
 }, {
   timestamps: true

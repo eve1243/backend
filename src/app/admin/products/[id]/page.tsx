@@ -28,8 +28,8 @@ interface Product {
   price: number;
   description: string;
   imageUrl?: string;
-  cloudinaryUrl?: string;
-  cloudinaryId?: string;
+  cloudinaryUrls?: string[];
+  cloudinaryIds?: string[];
 }
 
 export default function EditProduct({ params }: ProductParams) {
@@ -40,7 +40,7 @@ export default function EditProduct({ params }: ProductParams) {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
-  const [cloudinaryImage, setCloudinaryImage] = useState<CloudinaryImage | null>(null);
+  const [cloudinaryImages, setCloudinaryImages] = useState<CloudinaryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -63,12 +63,19 @@ export default function EditProduct({ params }: ProductParams) {
           setPrice(data.data.price.toString());
           setDescription(data.data.description);
           
-          // Set cloudinary image if available
-          if (data.data.cloudinaryUrl && data.data.cloudinaryId) {
-            setCloudinaryImage({
+          // Set cloudinary images if available
+          if (data.data.cloudinaryUrls && data.data.cloudinaryIds) {
+            const images = data.data.cloudinaryUrls.map((url: string, index: number) => ({
+              url,
+              publicId: data.data.cloudinaryIds[index]
+            }));
+            setCloudinaryImages(images);
+          } else if (data.data.cloudinaryUrl && data.data.cloudinaryId) {
+            // Legacy support for old format
+            setCloudinaryImages([{
               url: data.data.cloudinaryUrl,
               publicId: data.data.cloudinaryId
-            });
+            }]);
           }
         } else {
           setError(data.error || 'Failed to fetch product');
@@ -87,13 +94,18 @@ export default function EditProduct({ params }: ProductParams) {
 
   // Handle successful file upload
   const handleUploadComplete = (imageData: CloudinaryImage) => {
-    setCloudinaryImage(imageData);
+    setCloudinaryImages(prev => [...prev, imageData]);
     setError('');
   };
 
   // Handle upload errors
   const handleUploadError = (errorMessage: string) => {
     setError(`Upload error: ${errorMessage}`);
+  };
+  
+  // Remove an image
+  const removeImage = (publicId: string) => {
+    setCloudinaryImages(prev => prev.filter(img => img.publicId !== publicId));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,10 +129,10 @@ export default function EditProduct({ params }: ProductParams) {
         description,
       };
 
-      // Add cloudinary data if available
-      if (cloudinaryImage) {
-        productData.cloudinaryUrl = cloudinaryImage.url;
-        productData.cloudinaryId = cloudinaryImage.publicId;
+      // Add cloudinary images if available
+      if (cloudinaryImages.length > 0) {
+        productData.cloudinaryUrls = cloudinaryImages.map(img => img.url);
+        productData.cloudinaryIds = cloudinaryImages.map(img => img.publicId);
       }
 
       const response = await fetch(`/api/products/${id}`, {
@@ -236,10 +248,10 @@ export default function EditProduct({ params }: ProductParams) {
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Produktbild
+            Produktbilder
           </label>
-          <div className="flex flex-col md:flex-row items-start gap-4">
-            <div className="w-full md:w-1/2">
+          <div className="flex flex-col gap-4">
+            <div className="w-full">
               <FileUploader 
                 onUploadComplete={handleUploadComplete}
                 onError={handleUploadError}
@@ -251,37 +263,38 @@ export default function EditProduct({ params }: ProductParams) {
                 Unterstützte Formate: JPEG, PNG, WebP. Maximale Größe: 5MB.
               </p>
             </div>
-            <div className="w-full md:w-1/2">
-              {cloudinaryImage?.url ? (
-                <div className="relative">
-                  <img 
-                    src={cloudinaryImage.url} 
-                    alt="Preview" 
-                    className="h-20 w-20 object-cover rounded border border-gray-300" 
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setCloudinaryImage(null)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                  >
-                    ×
-                  </button>
+            
+            {cloudinaryImages.length > 0 && (
+              <div className="w-full">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Hochgeladene Bilder:</h3>
+                <div className="flex flex-wrap gap-3">
+                  {cloudinaryImages.map((image) => (
+                    <div key={image.publicId} className="relative group">
+                      <div className="h-24 w-24 relative">
+                        <img 
+                          src={image.url} 
+                          alt="Preview" 
+                          className="h-24 w-24 object-cover rounded border border-gray-300" 
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(image.publicId)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ) : product.cloudinaryUrl ? (
-                <div className="relative">
-                  <img 
-                    src={product.cloudinaryUrl} 
-                    alt={product.name} 
-                    className="h-20 w-20 object-cover rounded border border-gray-300" 
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Current image</p>
-                </div>
-              ) : (
-                <div className="h-20 w-20 bg-gray-100 border border-gray-200 rounded flex items-center justify-center text-gray-400">
-                  <span className="text-xs">No Image</span>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
+            
+            {cloudinaryImages.length === 0 && (
+              <div className="w-full bg-gray-50 border border-gray-200 rounded p-4 text-center">
+                <span className="text-gray-500">Noch keine Bilder hochgeladen</span>
+              </div>
+            )}
           </div>
         </div>
 

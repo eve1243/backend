@@ -32,11 +32,17 @@ export async function POST(req: NextRequest) {
       const cloudinaryResult = await uploadImage(body.image);
       
       // Add Cloudinary data to the product
-      body.cloudinaryUrl = cloudinaryResult.cloudinaryUrl;
-      body.cloudinaryId = cloudinaryResult.cloudinaryId;
+      body.cloudinaryUrls = [cloudinaryResult.cloudinaryUrl];
+      body.cloudinaryIds = [cloudinaryResult.cloudinaryId];
       
       // Remove the base64 image from the body to save DB space
       delete body.image;
+    }
+    
+    // For direct cloudinaryUrls from the frontend (multiple images)
+    if (body.cloudinaryUrls && Array.isArray(body.cloudinaryUrls)) {
+      // We already have the URLs array from the frontend
+      // This handles the case where images were uploaded directly via the FileUploader
     }
     
     const product = await Product.create(body);

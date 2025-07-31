@@ -13,6 +13,7 @@ interface Product {
   description: string;
   imageUrl?: string;
   cloudinaryUrl?: string;
+  cloudinaryUrls?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -139,26 +140,59 @@ export default function ProductsAdmin() {
                 products.map((product) => (
                   <tr key={product._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {product.cloudinaryUrl ? (
-                        <div className="h-12 w-12 relative">
+                      {product.cloudinaryUrls && product.cloudinaryUrls.length > 0 ? (
+                        <div className="flex items-center space-x-2">
+                          {/* Hauptbild (immer das erste im Array) */}
+                          <div className="h-16 w-16 relative">
+                            <Image
+                              src={product.cloudinaryUrls[0]}
+                              alt={product.name}
+                              fill
+                              className="object-cover rounded-md border border-gray-300"
+                            />
+                          </div>
+                          
+                          {/* Weitere Bilder als kleine Thumbnails, falls vorhanden */}
+                          {product.cloudinaryUrls.length > 1 && (
+                            <div className="flex -space-x-1">
+                              {product.cloudinaryUrls.slice(1, 3).map((url, index) => (
+                                <div key={index} className="h-8 w-8 relative border border-white rounded-full overflow-hidden shadow-sm">
+                                  <Image
+                                    src={url}
+                                    alt={`${product.name} ${index + 2}`}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                </div>
+                              ))}
+                              {product.cloudinaryUrls.length > 3 && (
+                                <div className="h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center border border-white shadow-sm">
+                                  <span className="text-gray-700 text-xs">+{product.cloudinaryUrls.length - 3}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : product.cloudinaryUrl ? (
+                        <div className="h-16 w-16 relative">
                           <Image
                             src={product.cloudinaryUrl}
                             alt={product.name}
                             fill
-                            className="object-cover rounded"
+                            className="object-cover rounded-md border border-gray-300"
                           />
                         </div>
                       ) : product.imageUrl ? (
-                        <div className="h-12 w-12 relative">
+                        <div className="h-16 w-16 relative">
                           <Image
                             src={product.imageUrl}
                             alt={product.name}
                             fill
-                            className="object-cover rounded"
+                            className="object-cover rounded-md border border-gray-300"
                           />
                         </div>
                       ) : (
-                        <div className="h-12 w-12 bg-gray-200 rounded flex items-center justify-center">
+                        <div className="h-16 w-16 bg-gray-200 rounded-md flex items-center justify-center border border-gray-300">
                           <span className="text-gray-400 text-xs">No Image</span>
                         </div>
                       )}

@@ -21,7 +21,7 @@ export default function NewProduct() {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
-  const [cloudinaryImage, setCloudinaryImage] = useState<CloudinaryImage | null>(null);
+  const [cloudinaryImages, setCloudinaryImages] = useState<CloudinaryImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -40,12 +40,16 @@ export default function NewProduct() {
   }
 
   const handleUploadComplete = (imageData: CloudinaryImage) => {
-    setCloudinaryImage(imageData);
+    setCloudinaryImages(prev => [...prev, imageData]);
     setError('');
   };
 
   const handleUploadError = (errorMessage: string) => {
     setError(`Upload error: ${errorMessage}`);
+  };
+
+  const removeImage = (publicId: string) => {
+    setCloudinaryImages(prev => prev.filter(img => img.publicId !== publicId));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,8 +71,8 @@ export default function NewProduct() {
         name,
         price: priceNum,
         description,
-        cloudinaryUrl: cloudinaryImage?.url,
-        cloudinaryId: cloudinaryImage?.publicId
+        cloudinaryUrls: cloudinaryImages.map(img => img.url),
+        cloudinaryIds: cloudinaryImages.map(img => img.publicId)
       };
 
       const response = await fetch('/api/products', {
@@ -113,7 +117,7 @@ export default function NewProduct() {
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             required
           />
         </div>
@@ -129,7 +133,7 @@ export default function NewProduct() {
             onChange={(e) => setPrice(e.target.value)}
             step="0.01"
             min="0.01"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             required
           />
         </div>
@@ -143,17 +147,17 @@ export default function NewProduct() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             required
           />
         </div>
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Produktbild
+            Produktbilder
           </label>
-          <div className="flex flex-col md:flex-row items-start gap-4">
-            <div className="w-full md:w-1/2">
+          <div className="flex flex-col gap-4">
+            <div className="w-full">
               <FileUploader 
                 onUploadComplete={handleUploadComplete}
                 onError={handleUploadError}
@@ -165,28 +169,38 @@ export default function NewProduct() {
                 Unterstützte Formate: JPEG, PNG, WebP. Maximale Größe: 5MB.
               </p>
             </div>
-            <div className="w-full md:w-1/2">
-              {cloudinaryImage?.url ? (
-                <div className="relative">
-                  <img 
-                    src={cloudinaryImage.url} 
-                    alt="Preview" 
-                    className="h-20 w-20 object-cover rounded border border-gray-300" 
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setCloudinaryImage(null)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                  >
-                    ×
-                  </button>
+            
+            {cloudinaryImages.length > 0 && (
+              <div className="w-full">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Hochgeladene Bilder:</h3>
+                <div className="flex flex-wrap gap-3">
+                  {cloudinaryImages.map((image) => (
+                    <div key={image.publicId} className="relative group">
+                      <div className="h-24 w-24 relative">
+                        <img 
+                          src={image.url} 
+                          alt="Preview" 
+                          className="h-24 w-24 object-cover rounded border border-gray-300" 
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(image.publicId)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <div className="h-20 w-20 bg-gray-100 border border-gray-200 rounded flex items-center justify-center text-gray-400">
-                  <span className="text-xs">No Image</span>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
+            
+            {cloudinaryImages.length === 0 && (
+              <div className="w-full bg-gray-50 border border-gray-200 rounded p-4 text-center">
+                <span className="text-gray-500">Noch keine Bilder hochgeladen</span>
+              </div>
+            )}
           </div>
         </div>
 
