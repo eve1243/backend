@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -16,6 +16,13 @@ interface CloudinaryImage {
   size?: number;
 }
 
+interface Category {
+  _id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+}
+
 interface ProductParams {
   params: {
     id: string;
@@ -27,6 +34,7 @@ interface Product {
   name: string;
   price: number;
   description: string;
+  category: string;
   imageUrl?: string;
   cloudinaryUrls?: string[];
   cloudinaryIds?: string[];
@@ -40,8 +48,11 @@ export default function EditProduct({ params }: ProductParams) {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
   const [cloudinaryImages, setCloudinaryImages] = useState<CloudinaryImage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -50,6 +61,30 @@ export default function EditProduct({ params }: ProductParams) {
       router.push('/login');
     }
   }, [status, router]);
+
+  // Kategorien laden
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        setLoadingCategories(true);
+        const response = await fetch('/api/categories');
+        const data = await response.json();
+        
+        if (data.success) {
+          setCategories(data.data);
+          console.log('Loaded categories:', data.data);
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Kategorien:', error);
+      } finally {
+        setLoadingCategories(false);
+      }
+    }
+    
+    if (session) {
+      fetchCategories();
+    }
+  }, [session]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -62,6 +97,9 @@ export default function EditProduct({ params }: ProductParams) {
           setName(data.data.name);
           setPrice(data.data.price.toString());
           setDescription(data.data.description);
+          setCategory(data.data.category || '');
+          
+          console.log('Loaded product with category:', data.data.category);
           
           // Set cloudinary images if available
           if (data.data.cloudinaryUrls && data.data.cloudinaryIds) {
@@ -127,6 +165,7 @@ export default function EditProduct({ params }: ProductParams) {
         name,
         price: priceNum,
         description,
+        category,
       };
 
       // Add cloudinary images if available
@@ -244,6 +283,45 @@ export default function EditProduct({ params }: ProductParams) {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
+        </div>
+        
+        <div className="mb-4">
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+            Kategorie *
+          </label>
+          {loadingCategories ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500 mr-2"></div>
+              <span className="text-sm text-gray-500">Kategorien werden geladen...</span>
+            </div>
+          ) : categories.length > 0 ? (
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="" disabled>-- Kategorie wählen --</option>
+              {categories.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <div className="text-amber-600 text-sm">
+                Keine Kategorien gefunden. Bitte erstellen Sie zuerst eine Kategorie.
+              </div>
+              <Link
+                href="/admin/categories/new"
+                className="text-sm text-blue-600 hover:text-blue-800 inline-block"
+              >
+                Kategorie erstellen
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="mb-6">

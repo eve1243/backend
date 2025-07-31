@@ -11,6 +11,7 @@ interface Product {
   name: string;
   price: number;
   description: string;
+  category: string;
   imageUrl?: string;
   cloudinaryUrl?: string;
   cloudinaryUrls?: string[];

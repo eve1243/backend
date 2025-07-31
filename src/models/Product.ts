@@ -14,6 +14,11 @@ const ProductSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please provide a description for this product.'],
   },
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    required: [true, 'Bitte wählen Sie eine Kategorie für dieses Produkt aus.'],
+  },
   imageUrl: {
     type: String,
   },

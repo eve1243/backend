@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -15,16 +15,52 @@ interface CloudinaryImage {
   size?: number;
 }
 
+interface Category {
+  _id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+}
+
 export default function NewProduct() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
   const [cloudinaryImages, setCloudinaryImages] = useState<CloudinaryImage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Kategorien laden
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        setLoadingCategories(true);
+        const response = await fetch('/api/categories');
+        const data = await response.json();
+        
+        if (data.success) {
+          const activeCategories = data.data.filter((cat: Category) => cat.isActive);
+          setCategories(activeCategories);
+          // Setze die erste Kategorie als Standard, wenn vorhanden
+          if (activeCategories.length > 0) {
+            setCategory(activeCategories[0]._id);
+          }
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Kategorien:', error);
+      } finally {
+        setLoadingCategories(false);
+      }
+    }
+    
+    fetchCategories();
+  }, []);
 
   if (status === 'loading') {
     return (
@@ -71,6 +107,7 @@ export default function NewProduct() {
         name,
         price: priceNum,
         description,
+        category,
         cloudinaryUrls: cloudinaryImages.map(img => img.url),
         cloudinaryIds: cloudinaryImages.map(img => img.publicId)
       };
@@ -150,6 +187,45 @@ export default function NewProduct() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             required
           />
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+            Kategorie *
+          </label>
+          {loadingCategories ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500 mr-2"></div>
+              <span className="text-sm text-gray-500">Kategorien werden geladen...</span>
+            </div>
+          ) : categories.length > 0 ? (
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+              required
+            >
+              <option value="" disabled>-- Kategorie wählen --</option>
+              {categories.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <div className="text-amber-600 text-sm">
+                Keine Kategorien gefunden. Bitte erstellen Sie zuerst eine Kategorie.
+              </div>
+              <Link
+                href="/admin/categories/new"
+                className="text-sm text-blue-600 hover:text-blue-800 inline-block"
+              >
+                Kategorie erstellen
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="mb-6">

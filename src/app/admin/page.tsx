@@ -9,6 +9,7 @@ interface Stats {
   totalValue: number;
   avgPrice: number;
   productsByCategory: Record<string, number>;
+  categoriesData: any[];
   recentlyAdded: any[];
 }
 
@@ -19,6 +20,7 @@ export default function AdminDashboardPage() {
     totalValue: 0,
     avgPrice: 0,
     productsByCategory: {},
+    categoriesData: [],
     recentlyAdded: []
   });
   const [loading, setLoading] = useState(true);
@@ -27,11 +29,16 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const res = await fetch('/api/products');
-        const data = await res.json();
+        // Produkte abrufen
+        const productRes = await fetch('/api/products');
+        const productData = await productRes.json();
         
-        if (data.success) {
-          const products = data.data;
+        // Kategorien mit Produkten abrufen
+        const categoryRes = await fetch('/api/categories/products');
+        const categoryData = await categoryRes.json();
+        
+        if (productData.success) {
+          const products = productData.data;
           
           // Calculate total inventory value
           const totalValue = products.reduce((sum: number, product: any) => sum + product.price, 0);
@@ -39,15 +46,22 @@ export default function AdminDashboardPage() {
           // Calculate average price
           const avgPrice = products.length > 0 ? totalValue / products.length : 0;
           
-          // Mock product categories for demo purposes
-          // In a real app, you'd have actual categories in your schema
-          const categories = ['Sportgeräte', 'Kleidung', 'Schuhe', 'Accessoires', 'Nahrungsergänzung'];
+          // Kategoriedaten vorbereiten
           const productsByCategory: Record<string, number> = {};
+          const categoriesData = categoryData.success ? categoryData.data : [];
           
-          // Assign random categories for demonstration
-          categories.forEach(category => {
-            productsByCategory[category] = Math.floor(Math.random() * (products.length / 2));
-          });
+          // Produktanzahl pro Kategorie
+          if (categoriesData.length > 0) {
+            categoriesData.forEach((category: any) => {
+              productsByCategory[category.name] = category.productCount || 0;
+            });
+          } else {
+            // Fallback wenn keine Kategoriedaten verfügbar sind
+            const categories = ['Sportgeräte', 'Kleidung', 'Schuhe', 'Accessoires', 'Nahrungsergänzung'];
+            categories.forEach(category => {
+              productsByCategory[category] = Math.floor(Math.random() * (products.length / 2));
+            });
+          }
           
           // Get 5 most recently added products
           const recentlyAdded = [...products]
@@ -59,6 +73,7 @@ export default function AdminDashboardPage() {
             totalValue,
             avgPrice,
             productsByCategory,
+            categoriesData,
             recentlyAdded
           });
         }

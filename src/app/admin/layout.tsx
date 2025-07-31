@@ -87,6 +87,22 @@ export default function AdminLayout({
               </li>
               <li>
                 <Link 
+                  href="/admin/categories" 
+                  className={`flex items-center px-6 py-3 ${
+                    pathname?.includes('/admin/categories') 
+                      ? 'bg-blue-50 text-blue-600 border-r-4 border-blue-500' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5 4a1 1 0 011-1h8a1 1 0 011 1v1H5V4zm4 3V6h2v1h-2zm-3 0V6h2v1H6zm7 0V6h1v1h-1zm-4 7a1 1 0 11-2 0 1 1 0 012 0zm-3 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" clipRule="evenodd" />
+                    <path d="M9 6a3 3 0 00-2.83 4h5.66A3 3 0 009 6zM3 8.5a5.5 5.5 0 1111 0 5.5 5.5 0 01-11 0z" />
+                  </svg>
+                  Kategorien
+                </Link>
+              </li>
+              <li>
+                <Link 
                   href="/admin/analytics" 
                   className={`flex items-center px-6 py-3 ${
                     pathname === '/admin/analytics' 
